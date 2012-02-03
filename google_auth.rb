@@ -16,6 +16,10 @@ send_user_to = "https://accounts.google.com/o/oauth2/auth?scope=#{google_contact
 #the user approves the request and you get a code in your redirect URI 'http://YOUR_SITE/googleauth?code=YOUR_CODE 
 @code = 'YOUR_CODE' #=> get YOUR_CODE at the end of your redirect URI 'http://YOUR_SITE/googleauth?code=YOUR_CODE 
 
+#create a new Auth session
+Auth.new({:code => @code})
+
+#trade in your code for an access token, which expires in 1 hour, and a refresh token - to get a new access token when you need it
 class Auth
   attr_reader :refresh_token , :access_token , :code , :token_expires_time
   
@@ -26,6 +30,8 @@ class Auth
     end
     acquire_new_access_token unless @refresh_token.nil? #if we don't have a code, make sure we have the latest access_token
   end
+  
+  #you trade in the code for an access token, which lasts only 1 hour, and a refresh token. 
   #acquire_tokens_with_code (returns refresh & access token)
   def acquire_tokens_with_code code
     res = Typhoeus::Request.post('https://accounts.google.com/o/oauth2/token ', :params => {
@@ -40,7 +46,8 @@ class Auth
     @refresh_token = results['refresh_token']
     @token_expires_time = results['expires_in'].to_i + Time.now.to_i
   end
-  #acquire_new_access_token 
+  
+  #save the refresh token so you can get a new access token later on if you need to access the users data beyond the 1 hour access token limit
   def acquire_new_access_token
     res = Typhoeus::Request.post('https://accounts.google.com/o/oauth2/token ', :params => {
       'client_id' => CLIENT_ID,
